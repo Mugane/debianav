@@ -23,6 +23,6 @@ chmod +x av.sh && ./av.sh
 
 ## Future features
 Features planned for addition in the future:
-- fail2ban & ufw (including fix for active(exited) issue)
+- fail2ban & ufw
 - other utilities? htop?
 - logs and offsite logging (especially immutable logging)
