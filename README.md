@@ -21,3 +21,8 @@ export $SCAN_HOUR=[0-23]
 chmod +x av.sh && ./av.sh
 ```
 
+## Future features
+Features planned for addition in the future:
+- fail2ban & ufw (including fix for active(exited) issue)
+- other utilities? htop?
+- logs and offsite logging (especially immutable logging)
