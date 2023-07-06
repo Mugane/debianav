@@ -55,6 +55,8 @@ if [ -z "$PUBLIC_HOSTNAME" ]; then # fallback to nslookup and hostname
     PUBLIC_HOSTNAME=$(nslookup "$(hostname -I | awk '{print $1}')" | awk '/name/{print $NF}' | sed 's/\.$//')
 fi
 
+if ! command -v wget &> /dev/null; then sudo apt-get update && sudo apt install -y wget; fi # required for rkhunter updates
+
 # Prompt for the email address where alerts will be sent
 # while read -p "Enter the email address where alerts will be sent (default $ALERT_EMAIL): " -r ALERT_EMAIL && ! IS_VALID_EMAIL "$ALERT_EMAIL"; do
 while read -p "Enter the email address where alerts will be sent (default $ALERT_EMAIL): " input && ALERT_EMAIL=${input:-$ALERT_EMAIL} && ! IS_VALID_EMAIL "$ALERT_EMAIL"; do
@@ -113,6 +115,14 @@ sudo freshclam
 sudo apt install -y chkrootkit rkhunter
 
 # Update rkhunter database and configuration
+sudo bash -c 'cat > /var/lib/rkhunter/mirrors.dat << EOL
+Version:2007060601
+mirror=http://rkhunter.sourceforge.net
+mirror=http://rkhunter.sourceforge.net
+EOL'
+sudo sed -i 's/UPDATE_MIRRORS=1/UPDATE_MIRRORS=0/' /etc/rkhunter.conf # Set UPDATE_MIRRORS = 0 in rkhunter.conf to prevent updating the mirrors list (security - this will keep just rkhunter.sourceforge.net as the mirror)
+sed -i "s|^WEB_CMD=.*|WEB_CMD=wget|" /etc/rkhunter.conf
+sed -i "s|^MIRRORS_MODE=.*|MIRRORS_MODE=0|" /etc/rkhunter.conf
 sudo rkhunter --update
 sudo rkhunter --propupd
 
@@ -135,24 +145,28 @@ sudo sed -i 's/quarantine_clean="0"/quarantine_clean="1"/' /usr/local/maldetect/
 cat <<EOF | sudo tee /usr/local/bin/scan_jobs.sh
 #!/bin/bash
 
+# freshclam not needed because should be running daemon.
 /usr/bin/clamscan -r --bell -i / > /tmp/clamav_scan_temp.log
 cat /tmp/clamav_scan_temp.log >> /var/log/clamav_scan.log
 if grep -q FOUND /tmp/clamav_scan_temp.log; then
   mail -s "ClamAV Scan Report for \$PUBLIC_HOSTNAME" \$ALERT_EMAIL < /tmp/clamav_scan_temp.log
 fi
 
+apt-get install --only-upgrade chkrootkit
 /usr/sbin/chkrootkit > /tmp/chkrootkit_scan_temp.log
 cat /tmp/chkrootkit_scan_temp.log >> /var/log/chkrootkit_scan.log
 if grep -q INFECTED /tmp/chkrootkit_scan_temp.log; then
   mail -s "chkrootkit Scan Report for \$PUBLIC_HOSTNAME" \$ALERT_EMAIL < /tmp/chkrootkit_scan_temp.log
 fi
 
+rkhunter --update
 /usr/bin/rkhunter --cronjob --report-warnings-only > /tmp/rkhunter_scan_temp.log
 cat /tmp/rkhunter_scan_temp.log >> /var/log/rkhunter_scan.log
 if grep -q Warning /tmp/rkhunter_scan_temp.log; then
   mail -s "rkhunter Scan Report for \$PUBLIC_HOSTNAME" \$ALERT_EMAIL < /tmp/rkhunter_scan_temp.log
 fi
 
+maldet -u
 /usr/local/maldetect/maldet -a / > /tmp/lmd_scan_temp.log
 cat /tmp/lmd_scan_temp.log >> /var/log/lmd_scan.log
 if grep -q '{scan,hit}:' /tmp/lmd_scan_temp.log; then
