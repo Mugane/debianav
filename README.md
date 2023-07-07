@@ -18,7 +18,9 @@ export $SCAN_HOUR=[0-23]
 
 ## Usage
 ```
-chmod +x av.sh && ./av.sh
+sudo curl -sLO https://raw.githubusercontent.com/Mugane/debianav/main/av.sh
+sudo chmod +x av.sh
+sudo ./av.sh
 ```
 
 ## Future features
