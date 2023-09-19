@@ -8,7 +8,9 @@ Bash script to set up Antivirus &amp; Antimalware services on Debian/Ubuntu
 - Daily scan results are logged to  `/var/log/chkrootkit_scan.log`, `/var/log/rkhunter.log` and  `/var/log/lmd_scan.log`
 
 ## Parameters
-Global parameters can be used, or the script will prompt for them. Use the following code to set the variables in the parent shell:
+Global parameters can be used, or the script will prompt for them.
+You will need to set up mailgun SMTP credentials (typically at https://app.mailgun.com/app/sending/domains/[your.mailgun.domain]/credentials)
+Use the following code to set the variables in the parent shell:
 ```
 export $MAILGUN_SMTP_USER=[mailgun email address]
 export $MAILGUN_SMTP_PASS=[mailgun smtp password]
